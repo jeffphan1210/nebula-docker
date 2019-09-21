@@ -1,0 +1,7 @@
+venv
+.idea
+*.json
+*.pickle
+*.pyc
+*.secret
+celerybeat-schedule
