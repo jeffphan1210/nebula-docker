@@ -1,0 +1,9 @@
+[submodule "frontend"]
+	path = frontend
+	url = ./frontend
+[submodule "web"]
+	path = web
+	url = ./web
+[submodule "worker"]
+	path = worker
+	url = ./worker/
