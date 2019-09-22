@@ -1,9 +1,9 @@
 [submodule "frontend"]
 	path = frontend
-	url = ./frontend
+	url = https://github.com/nebula-analytics/nebula
 [submodule "web"]
 	path = web
-	url = ./web
+	url = https://github.com/nebula-analytics/nebula-webservice
 [submodule "worker"]
 	path = worker
-	url = ./worker/
+	url = https://github.com/nebula-analytics/nebula-background-worker/
