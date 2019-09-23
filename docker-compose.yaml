@@ -15,7 +15,7 @@ services:
   frontend:
     build:
       context: "frontend"
-    depends_on: 
+    depends_on:
       - web_service
     ports:
       - "0.0.0.0:80:80"
@@ -25,12 +25,14 @@ services:
       context: "web"
       dockerfile: "Dockerfile-dev"
     environment:
-      mongo_host: "mongo"
-      mongo_user: *db_user
-      mongo_pass: *db_pass    
+      nebula.eve.MONGO_URI: "mongodb://root:example@mongo:27017"
+      #      nebula.eve.MONGO_HOST: "mongo"
+      #      nebula.eve.MONGO_USERNAME: *db_user
+      #      nebula.eve.MONGO_PASSWORD: *db_pass
+      ##      nebula.eve.MONGO_AUTH_SOURCE: 'admin'
     restart: "always"
     depends_on:
-      - mongo   
+      - mongo
     ports:
       - "0.0.0.0:8080:5000"
 
@@ -50,7 +52,7 @@ services:
     restart: "always"
 
   node_2:
-    command:  "python -m celery -A schedule worker --loglevel=DEBUG -Q nebula.express -n node_1" 
+    command:  "python -m celery -A schedule worker --loglevel=DEBUG -Q nebula.express -n node_1"
     build:
       context: "worker"
       dockerfile: "Dockerfile"
