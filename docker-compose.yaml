@@ -1,43 +1,68 @@
 version: '3.7'
 services:
+  reverse-proxy:
+    image: traefik:v2.0
+    # Enables the web UI and tells Traefik to listen to docker
+    command: --providers.docker
+    ports:
+      # The HTTP port
+      - "80:80"
+      # The Web UI (enabled by --api.insecure=true)
+      - "8080:8080"
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /proxy/:/etc/traefik
+
   mongo:
     image: mongo
     restart: always
     environment:
+      ## Ensure you change this before deploying
       MONGO_INITDB_ROOT_USERNAME: &db_user root
       MONGO_INITDB_ROOT_PASSWORD: &db_pass example
+    ports:
+      - 27117:27017
 
   message_queue:
     image: rabbitmq:3.7-alpine
     restart: always
-    ports:
-      - 6379:6379
+
   frontend:
     build:
       context: "frontend"
+    environment:
+      NODE_ENV: 'production'
+      REACT_APP_API_LOCATION: "/api"
     depends_on:
-      - web_service
-    ports:
-      - "0.0.0.0:80:80"
+      - reverse-proxy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend.rule=Path(`/`) || PathPrefix(`/static/`)
+
 
   web_service:
     build:
       context: "web"
-      dockerfile: "Dockerfile-dev"
+      dockerfile: "Dockerfile"
     environment:
-      nebula.eve.MONGO_URI: "mongodb://root:example@mongo:27017"
-      #      nebula.eve.MONGO_HOST: "mongo"
-      #      nebula.eve.MONGO_USERNAME: *db_user
-      #      nebula.eve.MONGO_PASSWORD: *db_pass
-      ##      nebula.eve.MONGO_AUTH_SOURCE: 'admin'
+      WEB_CONCURRENCY: 2
+      nebula_eve_MONGO_HOST: "mongo"
+      nebula_eve_MONGO_USERNAME: *db_user
+      nebula_eve_MONGO_PASSWORD: *db_pass
+      nebula_eve_MONGO_AUTH_SOURCE: 'admin'
+      nebula_eve_URL_PREFIX: "api"
+      LOG_LEVEL: "debug"
     restart: "always"
     depends_on:
+      - reverse-proxy
       - mongo
-    ports:
-      - "0.0.0.0:8080:5000"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.api.rule=PathPrefix(`/api/`)
+
 
   node_1:
-
     build:
       context: "worker"
     command:  "python -m celery -A schedule worker --loglevel=DEBUG -Q nebula.express,nebula.import -n node_1"
@@ -61,6 +86,7 @@ services:
       *worker_dep
     environment:
       *worker_env
+
   node_scheduler:
     restart: "always"
     build:
@@ -72,12 +98,3 @@ services:
 
     environment:
       *worker_env
-
-  mongo-express:
-    image: mongo-express
-    restart: always
-    ports:
-      - 8081:8081
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: example
