@@ -1,16 +1,10 @@
 version: '3.7'
 services:
   reverse-proxy:
-    image: traefik:v2.0
-    # Enables the web UI and tells Traefik to listen to docker
-    command: --providers.docker
+    image: traefik:v1.7
     ports:
-      # The HTTP port
       - "80:80"
-      # The Web UI (enabled by --api.insecure=true)
-      - "8080:8080"
     volumes:
-      # So that Traefik can listen to the Docker events
       - /var/run/docker.sock:/var/run/docker.sock
       - /proxy/:/etc/traefik
 
@@ -18,11 +12,8 @@ services:
     image: mongo
     restart: always
     environment:
-      ## Ensure you change this before deploying
       MONGO_INITDB_ROOT_USERNAME: &db_user root
       MONGO_INITDB_ROOT_PASSWORD: &db_pass example
-    ports:
-      - 27117:27017
 
   message_queue:
     image: rabbitmq:3.7-alpine
@@ -37,8 +28,7 @@ services:
     depends_on:
       - reverse-proxy
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.frontend.rule=Path(`/`) || PathPrefix(`/static/`)
+      - "traefik.frontend.rule=Path: '/'; PathPrefix:'/static/'"
 
 
   web_service:
@@ -58,8 +48,7 @@ services:
       - reverse-proxy
       - mongo
     labels:
-      - traefik.enable=true
-      - traefik.http.routers.api.rule=PathPrefix(`/api/`)
+      - "ttraefik.frontend.rule=PathPrefix:'/api/'";
 
 
   node_1:
