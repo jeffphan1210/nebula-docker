@@ -48,7 +48,7 @@ services:
       - reverse-proxy
       - mongo
     labels:
-      - "ttraefik.frontend.rule=PathPrefix:'/api/'";
+      - "traefik.frontend.rule=PathPrefix:'/api/'"
 
 
   node_1:
