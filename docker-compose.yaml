@@ -1,25 +1,20 @@
 version: '3.7'
 services:
   reverse-proxy:
-    image: traefik:v1.7
-    ports:
-      - "80:80"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /proxy/:/etc/traefik
 
   mongo:
     image: mongo
-    restart: always
+    restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: &db_user root
-      MONGO_INITDB_ROOT_PASSWORD: &db_pass example
+      MONGO_INITDB_ROOT_USERNAME: &db_user ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: &db_pass ${MONGO_PASSWORD}
 
-  message_queue:
+  rabbitmq:
     image: rabbitmq:3.7-alpine
-    restart: always
+    restart: unless-stopped
 
   frontend:
+    restart: unless-stopped
     build:
       context: "frontend"
     environment:
@@ -28,10 +23,10 @@ services:
     depends_on:
       - reverse-proxy
     labels:
-      - "traefik.frontend.rule=Path: '/'; PathPrefix:'/static/'"
+      - "traefik.frontend.rule=PathPrefix:/"
 
-
-  web_service:
+  web-service:
+    restart: unless-stopped
     build:
       context: "web"
       dockerfile: "Dockerfile"
@@ -43,15 +38,15 @@ services:
       nebula_eve_MONGO_AUTH_SOURCE: 'admin'
       nebula_eve_URL_PREFIX: "api"
       LOG_LEVEL: "debug"
-    restart: "always"
     depends_on:
       - reverse-proxy
       - mongo
     labels:
-      - "traefik.frontend.rule=PathPrefix:'/api/'"
+      - "traefik.api.rule=PathPrefix:'/api/'"
 
 
-  node_1:
+  node-1:
+    restart: unless-stopped
     build:
       context: "worker"
     command:  "python -m celery -A schedule worker --loglevel=DEBUG -Q nebula.express,nebula.import -n node_1"
@@ -59,31 +54,29 @@ services:
       nebula.database.mongodb.username: *db_user
       nebula.database.mongodb.password: *db_pass
       nebula.database.mongodb.host: "mongo:27017"
-      nebula.celery.broker_url:  "amqp://message_queue"
+      nebula.celery.broker_url:  "amqp://rabbitmq"
     depends_on: &worker_dep
       - mongo
-      - message_queue
-    restart: "always"
+      - rabbitmq
 
-  node_2:
+  node-2:
+    restart: unless-stopped
     command:  "python -m celery -A schedule worker --loglevel=DEBUG -Q nebula.express -n node_1"
     build:
       context: "worker"
       dockerfile: "Dockerfile"
-    restart: "always"
     depends_on:
       *worker_dep
     environment:
       *worker_env
 
-  node_scheduler:
-    restart: "always"
+  node-schedule:
+    restart: unless-stopped
     build:
       context: "worker"
     command: "celery beat -A schedule --loglevel=DEBUG --pidfile="
     depends_on:
-      - mongo
-      - message_queue
+      - node-2
 
     environment:
       *worker_env
