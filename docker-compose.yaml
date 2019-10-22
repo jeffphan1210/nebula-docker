@@ -41,7 +41,7 @@ services:
       nebula_eve_MONGO_USERNAME: *db_user
       nebula_eve_MONGO_PASSWORD: *db_pass
       nebula_eve_MONGO_AUTH_SOURCE: 'admin'
-      nebula_eve_URL_PREFIX: "api"
+      nebula_eve_URL_PREFIX: ""
       LOG_LEVEL: "debug"
     depends_on:
       - mongo
