@@ -9,16 +9,18 @@ services:
     depends_on:
       - frontend
       - web-service
-
+    user: ${CURRENT_UID}
 
   mongo:
     image: mongo
+    user: ${CURRENT_UID}
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: &db_user ${MONGO_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: &db_pass ${MONGO_PASSWORD}
 
   rabbitmq:
+    user: ${CURRENT_UID}
     image: rabbitmq:3.7-alpine
     restart: unless-stopped
 
