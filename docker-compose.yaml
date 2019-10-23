@@ -53,7 +53,7 @@ services:
     restart: unless-stopped
     build:
       context: "worker"
-    command:  "python -m celery -A schedule worker --loglevel=DEBUG -Q nebula.express,nebula.import -n node_1"
+    command:  "venv/bin/python -m celery -A schedule worker --loglevel=DEBUG -Q nebula.express,nebula.import -n node_1"
     environment: &worker_env
       nebula.database.mongodb.username: *db_user
       nebula.database.mongodb.password: *db_pass
@@ -65,7 +65,7 @@ services:
 
   node-2:
     restart: unless-stopped
-    command:  "python -m celery -A schedule worker --loglevel=DEBUG -Q nebula.express -n node_1"
+    command:  "venv/bin/python -m celery -A schedule worker --loglevel=DEBUG -Q nebula.express -n node_1"
     build:
       context: "worker"
       dockerfile: "Dockerfile"
@@ -78,7 +78,7 @@ services:
     restart: unless-stopped
     build:
       context: "worker"
-    command: "celery beat -A schedule --loglevel=DEBUG --pidfile="
+    command: "venv/bin/python -m celery beat -A schedule --loglevel=DEBUG --pidfile="
     depends_on:
       - node-2
 
