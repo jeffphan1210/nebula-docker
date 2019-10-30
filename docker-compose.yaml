@@ -25,7 +25,7 @@ services:
   frontend:
     restart: unless-stopped
     build:
-      context: "frontend"
+      context: https://github.com/nebula-analytics/nebula.git
     environment:
       NODE_ENV: 'production'
       REACT_APP_API_LOCATION: "/api"
@@ -33,8 +33,9 @@ services:
   web-service:
     restart: unless-stopped
     build:
-      context: "web"
+      context: https://github.com/nebula-analytics/nebula-webservice.git
       dockerfile: "Dockerfile"
+
     environment:
       WEB_CONCURRENCY: 2
       nebula_eve_MONGO_HOST: "mongo"
@@ -42,17 +43,32 @@ services:
       nebula_eve_MONGO_PASSWORD: *db_pass
       nebula_eve_MONGO_AUTH_SOURCE: 'admin'
       nebula_eve_URL_PREFIX: ""
-      LOG_LEVEL: "debug"
+      LOG_LEVEL: "info"
     depends_on:
       - mongo
 
+  setup-tool:
+    restart: unless-stopped
+    build:
+      context: https://github.com/nebula-analytics/nebula-automated-setup.git
+    environment:
+      SECRET: ${SECRET}
+      CONFIG_DIR: /config/nebula
+    volumes:
+      - type: volume
+        source: config
+        target: /config/nebula
+
+    ports:
+      - 127.0.0.1:5000:80
 
   node-1:
     restart: unless-stopped
     build:
-      context: "worker"
+      context: https://github.com/nebula-analytics/nebula-background-worker.git
     command:  "python -m celery -A schedule worker --loglevel=DEBUG -Q nebula.express,nebula.import -n node_1"
     environment: &worker_env
+      "nebula.config.path": /config/config.yaml.docker
       nebula.database.mongodb.username: *db_user
       nebula.database.mongodb.password: *db_pass
       nebula.database.mongodb.host: "mongo:27017"
@@ -60,25 +76,37 @@ services:
     depends_on: &worker_dep
       - mongo
       - rabbitmq
-
+    volumes:
+      - type: volume
+        source: config
+        target: /config
   node-2:
     restart: unless-stopped
     command:  "python -m celery -A schedule worker --loglevel=DEBUG -Q nebula.express -n node_1"
     build:
-      context: "worker"
-      dockerfile: "Dockerfile"
+      context: https://github.com/nebula-analytics/nebula-background-worker.git
     depends_on:
       *worker_dep
     environment:
       *worker_env
-
+    volumes:
+      - type: volume
+        source: config
+        target: /config
   node-schedule:
     restart: unless-stopped
     build:
-      context: "worker"
+      context: https://github.com/nebula-analytics/nebula-background-worker.git
     command: "celery beat -A schedule --loglevel=DEBUG --pidfile="
     depends_on:
       - node-2
 
     environment:
       *worker_env
+
+    volumes:
+      - type: volume
+        source: config
+        target: /config
+volumes:
+  config:
