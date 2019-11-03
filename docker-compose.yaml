@@ -28,7 +28,6 @@ services:
       context: https://github.com/nebula-analytics/nebula.git
     environment:
       NODE_ENV: 'production'
-      REACT_APP_API_LOCATION: "/api"
 
   web-service:
     restart: unless-stopped
@@ -71,7 +70,7 @@ services:
       "nebula.config.path": /config/config.yaml.docker
       nebula.database.mongodb.username: *db_user
       nebula.database.mongodb.password: *db_pass
-      nebula.database.mongodb.host: "mongo:27017"
+      nebula.database.mongodb.host: "mongo"
       nebula.celery.broker_url:  "amqp://rabbitmq"
     depends_on: &worker_dep
       - mongo
@@ -93,6 +92,8 @@ services:
       - type: volume
         source: config
         target: /config
+
+
   node-schedule:
     restart: unless-stopped
     build:
