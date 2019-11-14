@@ -45,3 +45,50 @@ Once the changes have been pulled, you can tell docker to replace the updated no
 ```
 docker-compose up -d --build
 ```
+
+Customization
+------------------------
+If you need to change any behaviours simply fork the relevant repository/s (frontend, web-service, setup-tool, background-worker).
+In the directory of the Nebula Docker repository create a new file `docker-compose.override.yaml` with the following contents;
+```yaml
+version: '3.7'
+services:
+# To modify the frontend, fork the repository below, make changes, and update the url
+  frontend:
+    build:
+      context: https://github.com/nebula-analytics/nebula.git
+      
+# To modify the web service, fork the repository below, make changes, and update the url
+  web-service:
+    build:
+      context: https://github.com/nebula-analytics/nebula-webservice.git
+      
+# To modify the setup tool, fork the repository below, make changes, and update the url
+  setup-tool:
+    build:
+      context: https://github.com/nebula-analytics/nebula-automated-setup.git
+ 
+# To modify the background worker, fork the repository below, make changes, and update ALL the urls below
+  node-1:
+    build:
+      context: https://github.com/nebula-analytics/nebula-background-worker.git
+  node-2:
+    build:
+      context: https://github.com/nebula-analytics/nebula-background-worker.git
+  node-schedule:
+    build:
+      context: https://github.com/nebula-analytics/nebula-background-worker.git
+```
+For example, to change the frontend to the RMIT branded version create the following docker-compose.override.yaml file.
+```docker-compose.yaml
+version: '3.7'
+services:
+  frontend:
+    build:
+      # Notice how you can specify a specific branch as well.
+      context: https://github.com/nebula-analytics/nebula.git#deploy/rmit-uat
+```
+All you need to do now to deploy your changes is run the command
+```
+docker-compose up -d --build
+```
